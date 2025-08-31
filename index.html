@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trendyol Price Simulator (RON)</title>
+  <style>
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      margin: 0; padding: 16px;
+      transition: background 0.3s, color 0.3s;
+    }
+    h1 { text-align: center; margin-bottom: 16px; font-size: 24px; font-weight: 700; }
+
+    .topbar { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 14px; align-items: center; }
+    .toggle-icon {
+      cursor: pointer; font-size: 18px; padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.15);
+      user-select: none;
+    }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+    .card {
+      border-radius: 14px;
+      padding: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .card h2 { margin-top: 0; font-size: 16px; margin-bottom: 12px; }
+
+    label { display: block; margin-bottom: 12px; font-size: 13px; }
+    input {
+      width: 100%; box-sizing: border-box;
+      padding: 10px; border-radius: 8px;
+      border: 1px solid #334155;
+      margin-top: 4px;
+      font-size: 14px;
+    }
+    input:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 0 1px #38bdf8; }
+
+    .results div {
+      border-radius: 10px; padding: 10px; margin-bottom: 8px;
+      display: flex; justify-content: space-between;
+      font-size: 13px;
+    }
+    .results div span { font-weight: 600; }
+    .good { color: #22c55e; font-weight: 700; }
+    .bad { color: #ef4444; font-weight: 700; }
+    #lp { color: #22c55e; font-weight: 700; }
+    #sp { color: #ef4444; font-weight: 700; }
+
+    .notes {
+      margin-top: 24px;
+      border-radius: 12px; padding: 16px;
+      font-size: 12px;
+    }
+    .notes h2 { margin-top: 0; font-size: 14px; margin-bottom: 8px; }
+    .abbr { font-weight: 600; color: #38bdf8; }
+
+    /* Dark mode */
+    body.dark { background: linear-gradient(180deg, #0d1b2a, #1b263b); color: #e0eaf5; }
+    body.dark .card { background: rgba(15,25,40,0.9); border: 1px solid rgba(255,255,255,0.08); }
+    body.dark input { background: #1e293b; color: #f8fafc; border-color: #334155; }
+    body.dark .results div { background: #1e293b; border: 1px solid #334155; }
+    body.dark .notes { background: rgba(15,25,40,0.9); border: 1px solid rgba(255,255,255,0.08); color: #94a3b8; }
+
+    /* Light mode */
+    body.light { background: #f1f5f9; color: #0f172a; }
+    body.light .card { background: #ffffff; border: 1px solid #cbd5e1; }
+    body.light input { background: #ffffff; color: #0f172a; border-color: #cbd5e1; }
+    body.light .results div { background: #f8fafc; border: 1px solid #cbd5e1; }
+    body.light .notes { background: #f8fafc; border: 1px solid #cbd5e1; color: #334155; }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+      .card { padding: 14px; }
+      h1 { font-size: 20px; }
+      .card h2 { font-size: 14px; }
+      label, input, .results div, .notes { font-size: 12px; }
+    }
+  </style>
+</head>
+<body class="dark">
+  <div class="topbar">
+    <div id="modeIcon" class="toggle-icon" onclick="toggleMode()">🌙</div>
+    <div id="langIcon" class="toggle-icon" onclick="toggleLang()">EN</div>
+  </div>
+
+  <h1 id="title">Trendyol Price Simulator</h1>
+
+  <div class="grid">
+    <div class="card">
+      <h2 id="inputsTitle">Inputs</h2>
+      <label id="labelC">Purchase Price (C, incl. VAT, RON)
+        <input id="c" type="number" step="0.01" value="120">
+      </label>
+      <label id="labelP">Desired Profit (P, RON)
+        <input id="p" type="number" step="0.01" value="50">
+      </label>
+      <label id="labelD">Discount % (d)
+        <input id="d" type="number" step="0.01" value="30">
+      </label>
+      <label id="labelT">Trendyol Coverage % of Discount (t)
+        <input id="t" type="number" step="0.01" value="30">
+      </label>
+      <label id="labelK">Commission % (k)
+        <input id="k" type="number" step="0.01" value="14">
+      </label>
+      <label id="labelS">Shipping Cost (s, RON)
+        <input id="s" type="number" step="0.01" value="12">
+      </label>
+    </div>
+
+    <div class="card results">
+      <h2 id="resultsTitle">Results</h2>
+      <div><span id="lblLP">Required List Price (LP):</span> <span id="lp">–</span></div>
+      <div><span id="lblSP">Final Selling Price (SP):</span> <span id="sp">–</span></div>
+      <div><span id="lblDisc">Total Discount:</span> <span id="disc">–</span></div>
+      <div><span id="lblCovered">Covered by Trendyol:</span> <span id="covered">–</span></div>
+      <div><span id="lblGross">Gross Income (SP + Coverage):</span> <span id="gross">–</span></div>
+      <div><span id="lblComm">Commission:</span> <span id="comm">–</span></div>
+      <div><span id="lblShip">Shipping:</span> <span id="ship">–</span></div>
+      <div><span id="lblNetIncome">Net Income:</span> <span id="netIncome">–</span></div>
+      <div><span id="lblNetProfit">Net Profit:</span> <span id="netProfit">–</span></div>
+      <div><span id="lblNetMargin">Net Margin %:</span> <span id="netMargin">–</span></div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <h2 id="notesTitle">Column Explanations & Logic</h2>
+    <p><span class="abbr">C</span> = Purchase cost (RON, including VAT).</p>
+    <p><span class="abbr">P</span> = Desired profit after all deductions (RON).</p>
+    <p><span class="abbr">d</span> = Discount % applied in the campaign (e.g. 0.3 = 30%).</p>
+    <p><span class="abbr">t</span> = Percentage of the discount covered by Trendyol (e.g. 0.3 = 30%).</p>
+    <p><span class="abbr">k</span> = Commission % Trendyol charges (applied on SP + coverage).</p>
+    <p><span class="abbr">s</span> = Fixed shipping cost (RON).</p>
+    <p><span class="abbr">LP</span> = Required List Price before discount, calculated to meet the desired profit.</p>
+    <p><span class="abbr">SP</span> = Final Selling Price paid by customer after discount.</p>
+    <p><span class="abbr">Gross Income</span> = SP + Trendyol coverage.</p>
+    <p><span class="abbr">Net Income</span> = Gross Income – Commission – Shipping.</p>
+    <p><span class="abbr">Net Profit</span> = Net Income – Purchase Cost.</p>
+    <p><span class="abbr">Net Margin %</span> = Net Profit ÷ Net Income.</p>
+  </div>
+
+  <script>
+    const nf = new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', maximumFractionDigits: 2 });
+    const nfPct = new Intl.NumberFormat('ro-RO', { style: 'percent', maximumFractionDigits: 2 });
+    let lang = 'en';
+    let mode = 'dark';
+
+    function pct(x){ const v = Number(x); return v > 1 ? v/100 : v; }
+    function set(id, val){ document.getElementById(id).textContent = val; }
+
+    function calc(){
+      const C = Number(document.getElementById('c').value)||0;
+      const P = Number(document.getElementById('p').value)||0;
+      const d = pct(document.getElementById('d').value);
+      const t = pct(document.getElementById('t').value);
+      const k = pct(document.getElementById('k').value);
+      const s = Number(document.getElementById('s').value)||0;
+
+      const denom = ((1 - d) + d*t) * (1 - k);
+      if (denom <= 0) { return; }
+
+      const LP = (C + P + s) / denom;
+      const SP = LP * (1 - d);
+      const discountAmt = LP * d;
+      const coverage = discountAmt * t;
+      const grossIncome = SP + coverage;
+      const commission = grossIncome * k;
+      const netIncome = grossIncome - commission - s;
+      const netProfit = netIncome - C;
+      const netMargin = netIncome !== 0 ? netProfit / netIncome : 0;
+
+      set('lp', nf.format(LP));
+      set('sp', nf.format(SP));
+      set('disc', nf.format(discountAmt));
+      set('covered', nf.format(coverage));
+      set('gross', nf.format(grossIncome));
+      set('comm', nf.format(commission));
+      set('ship', nf.format(s));
+      set('netIncome', nf.format(netIncome));
+      document.getElementById('netProfit').innerHTML = nf.format(netProfit);
+      document.getElementById('netProfit').className = netProfit>=0? 'good':'bad';
+      set('netMargin', nfPct.format(netMargin));
+    }
+
+    function toggleMode(){
+      document.body.classList.toggle('dark');
+      document.body.classList.toggle('light');
+      mode = (mode==='dark') ? 'light' : 'dark';
+      document.getElementById('modeIcon').textContent = (mode==='dark') ? '🌙' : '☀️';
+    }
+
+    function toggleLang(){
+      if(lang==='en'){
+        lang='ro';
+        document.getElementById('langIcon').textContent = 'RO';
+        document.getElementById('title').innerText='Simulator Preț Trendyol';
+        document.getElementById('inputsTitle').innerText='Date de intrare';
+        document.getElementById('resultsTitle').innerText='Rezultate';
+        document.getElementById('notesTitle').innerText='Explicații coloane & Logică';
+      } else {
+        lang='en';
+        document.getElementById('langIcon').textContent = 'EN';
+        document.getElementById('title').innerText='Trendyol Price Simulator';
+        document.getElementById('inputsTitle').innerText='Inputs';
+        document.getElementById('resultsTitle').innerText='Results';
+        document.getElementById('notesTitle').innerText='Column Explanations & Logic';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('input').forEach(el => {
+        el.addEventListener('input', calc);
+      });
+      calc();
+    });
+  </script>
+</body>
+</html>
